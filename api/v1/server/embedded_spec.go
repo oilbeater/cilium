@@ -1984,6 +1984,9 @@ func init() {
             }
           }
         },
+        "multi-homing-configuration": {
+          "$ref": "#/definitions/MultiHomingConfiguration"
+        },
         "nodeMonitor": {
           "description": "Status of the node monitor",
           "$ref": "#/definitions/MonitorStatus"
@@ -3298,6 +3301,19 @@ func init() {
         "unknown": {
           "description": "Number of unknown samples.",
           "type": "integer"
+        }
+      }
+    },
+    "MultiHomingConfiguration": {
+      "description": "Multi-homing configuration",
+      "type": "object",
+      "properties": {
+        "devices": {
+          "description": "List of devices used in multi-homing mode",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -6466,6 +6482,9 @@ func init() {
             }
           }
         },
+        "multi-homing-configuration": {
+          "$ref": "#/definitions/MultiHomingConfiguration"
+        },
         "nodeMonitor": {
           "description": "Status of the node monitor",
           "$ref": "#/definitions/MonitorStatus"
@@ -8067,6 +8086,19 @@ func init() {
         "unknown": {
           "description": "Number of unknown samples.",
           "type": "integer"
+        }
+      }
+    },
+    "MultiHomingConfiguration": {
+      "description": "Multi-homing configuration",
+      "type": "object",
+      "properties": {
+        "devices": {
+          "description": "List of devices used in multi-homing mode",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
