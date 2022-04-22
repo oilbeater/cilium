@@ -338,7 +338,7 @@ func (d *Daemon) allocateIPsLocked(ep *endpoint.Endpoint) error {
 	var err error
 
 	if option.Config.EnableIPv6 && ep.IPv6 != nil {
-		_, err = d.ipam.AllocateIPWithoutSyncUpstream(ep.IPv6.IP(), ep.HumanStringLocked()+" [restored]")
+		_, err = d.ipam.AllocateIPWithoutSyncUpstream(ep.IPv6.IP(), ep.HumanStringLocked()+" [restored]", ipam.PoolPodCIDR)
 		if err != nil {
 			return fmt.Errorf("unable to reallocate %s IPv6 address: %w", ep.IPv6.IP(), err)
 		}
@@ -351,7 +351,7 @@ func (d *Daemon) allocateIPsLocked(ep *endpoint.Endpoint) error {
 	}
 
 	if option.Config.EnableIPv4 && ep.IPv4 != nil {
-		_, err = d.ipam.AllocateIPWithoutSyncUpstream(ep.IPv4.IP(), ep.HumanStringLocked()+"[restored]")
+		_, err = d.ipam.AllocateIPWithoutSyncUpstream(ep.IPv4.IP(), ep.HumanStringLocked()+" [restored]", ipam.PoolPodCIDR)
 		switch {
 		// We only check for BypassIPAllocUponRestore for IPv4 because we
 		// assume that this flag is only turned on for IPv4-only IPAM modes

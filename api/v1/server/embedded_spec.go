@@ -817,6 +817,9 @@ func init() {
             "$ref": "#/parameters/ipam-owner"
           },
           {
+            "$ref": "#/parameters/ipam-pool"
+          },
+          {
             "$ref": "#/parameters/ipam-expiration"
           }
         ],
@@ -849,6 +852,9 @@ func init() {
           },
           {
             "$ref": "#/parameters/ipam-owner"
+          },
+          {
+            "$ref": "#/parameters/ipam-pool"
           }
         ],
         "responses": {
@@ -884,6 +890,9 @@ func init() {
         "parameters": [
           {
             "$ref": "#/parameters/ipam-release-arg"
+          },
+          {
+            "$ref": "#/parameters/ipam-pool"
           }
         ],
         "responses": {
@@ -4191,6 +4200,11 @@ func init() {
       "name": "owner",
       "in": "query"
     },
+    "ipam-pool": {
+      "type": "string",
+      "name": "pool",
+      "in": "query"
+    },
     "ipam-release-arg": {
       "type": "string",
       "description": "IP address or owner name",
@@ -5188,6 +5202,11 @@ func init() {
             "in": "query"
           },
           {
+            "type": "string",
+            "name": "pool",
+            "in": "query"
+          },
+          {
             "type": "boolean",
             "name": "expiration",
             "in": "header"
@@ -5228,6 +5247,11 @@ func init() {
             "type": "string",
             "name": "owner",
             "in": "query"
+          },
+          {
+            "type": "string",
+            "name": "pool",
+            "in": "query"
           }
         ],
         "responses": {
@@ -5267,6 +5291,11 @@ func init() {
             "name": "ip",
             "in": "path",
             "required": true
+          },
+          {
+            "type": "string",
+            "name": "pool",
+            "in": "query"
           }
         ],
         "responses": {
@@ -9022,6 +9051,11 @@ func init() {
     "ipam-owner": {
       "type": "string",
       "name": "owner",
+      "in": "query"
+    },
+    "ipam-pool": {
+      "type": "string",
+      "name": "pool",
       "in": "query"
     },
     "ipam-release-arg": {

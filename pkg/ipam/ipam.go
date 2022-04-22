@@ -31,6 +31,14 @@ const (
 	IPv4 Family = "ipv4"
 )
 
+// Pool is the type describing ...
+type Pool string
+
+const (
+	PoolPodCIDR     Pool = "" // default
+	PoolMultihoming Pool = "multihoming"
+)
+
 // DeriveFamily derives the address family of an IP
 func DeriveFamily(ip net.IP) Family {
 	if ip.To4() == nil {

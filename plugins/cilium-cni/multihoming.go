@@ -4,6 +4,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net"
 
@@ -186,28 +187,29 @@ func attachInterfaceInPod(
 		"len": len(podIPv4),
 	}).Debug("Got pod IPv4")
 
+	podName := string(cniArgs.K8S_POD_NAMESPACE) + "/" + string(cniArgs.K8S_POD_NAME)
+	pool := client.PoolMultihoming
+	ipam, err := c.IPAMAllocate("", podName, pool, true)
+	if err != nil {
+		return nil, fmt.Errorf("unable to allocate additional interface IP via local cilium agent: %w", err)
+	}
+
+	if ipam == nil || ipam.Address == nil {
+		return nil, errors.New("invalid IPAM response, missing addressing")
+	}
+
 	/*
-		podName := string(cniArgs.K8S_POD_NAMESPACE) + "/" + string(cniArgs.K8S_POD_NAME) + "+" + attachIfaceName
-		ipam, err := c.IPAMAllocate("", podName, true)
-		if err != nil {
-			return nil, fmt.Errorf("unable to allocate additional interface IP via local cilium agent: %w", err)
-		}
-
-		if ipam == nil || ipam.Address == nil {
-			return nil, errors.New("invalid IPAM response, missing addressing")
-		}
-
 		// XXX: ignore host addressing information (needs own IPAM mode for additional interfaces)
 		ipam.HostAddressing = nil
-
-		// release addresses on failure
-		defer func() {
-			if err != nil {
-				releaseIP(c, ipam.Address.IPV4)
-				releaseIP(c, ipam.Address.IPV6)
-			}
-		}()
 	*/
+
+	// release addresses on failure
+	defer func() {
+		if err != nil {
+			releaseIP(c, ipam.Address.IPV4, pool)
+			releaseIP(c, ipam.Address.IPV6, pool)
+		}
+	}()
 
 	state := CmdState{
 		Endpoint: ep,

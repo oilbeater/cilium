@@ -48,36 +48,36 @@ func (ipam *IPAM) lookupIPsByOwner(owner string) (ips []net.IP) {
 }
 
 // AllocateIP allocates a IP address.
-func (ipam *IPAM) AllocateIP(ip net.IP, owner string) (err error) {
+func (ipam *IPAM) AllocateIP(ip net.IP, owner string, pool Pool) (err error) {
 	needSyncUpstream := true
-	_, err = ipam.allocateIP(ip, owner, needSyncUpstream)
+	_, err = ipam.allocateIP(ip, owner, pool, needSyncUpstream)
 	return
 }
 
 // AllocateIPWithAllocationResult allocates an IP address, and returns the
 // allocation result.
-func (ipam *IPAM) AllocateIPWithAllocationResult(ip net.IP, owner string) (result *AllocationResult, err error) {
+func (ipam *IPAM) AllocateIPWithAllocationResult(ip net.IP, owner string, pool Pool) (*AllocationResult, error) {
 	needSyncUpstream := true
-	return ipam.allocateIP(ip, owner, needSyncUpstream)
+	return ipam.allocateIP(ip, owner, pool, needSyncUpstream)
 }
 
 // AllocateIPWithoutSyncUpstream allocates a IP address without syncing upstream.
-func (ipam *IPAM) AllocateIPWithoutSyncUpstream(ip net.IP, owner string) (result *AllocationResult, err error) {
+func (ipam *IPAM) AllocateIPWithoutSyncUpstream(ip net.IP, owner string, pool Pool) (*AllocationResult, error) {
 	needSyncUpstream := false
-	return ipam.allocateIP(ip, owner, needSyncUpstream)
+	return ipam.allocateIP(ip, owner, pool, needSyncUpstream)
 }
 
 // AllocateIPString is identical to AllocateIP but takes a string
-func (ipam *IPAM) AllocateIPString(ipAddr, owner string) error {
+func (ipam *IPAM) AllocateIPString(ipAddr, owner string, pool Pool) error {
 	ip := net.ParseIP(ipAddr)
 	if ip == nil {
 		return fmt.Errorf("Invalid IP address: %s", ipAddr)
 	}
 
-	return ipam.AllocateIP(ip, owner)
+	return ipam.AllocateIP(ip, owner, pool)
 }
 
-func (ipam *IPAM) allocateIP(ip net.IP, owner string, needSyncUpstream bool) (result *AllocationResult, err error) {
+func (ipam *IPAM) allocateIP(ip net.IP, owner string, pool Pool, needSyncUpstream bool) (result *AllocationResult, err error) {
 	ipam.allocatorMutex.Lock()
 	defer ipam.allocatorMutex.Unlock()
 
@@ -130,7 +130,7 @@ func (ipam *IPAM) allocateIP(ip net.IP, owner string, needSyncUpstream bool) (re
 	return
 }
 
-func (ipam *IPAM) allocateNextFamily(family Family, owner string, needSyncUpstream bool) (result *AllocationResult, err error) {
+func (ipam *IPAM) allocateNextFamily(family Family, owner string, pool Pool, needSyncUpstream bool) (result *AllocationResult, err error) {
 	var allocator Allocator
 	switch family {
 	case IPv6:
@@ -139,7 +139,7 @@ func (ipam *IPAM) allocateNextFamily(family Family, owner string, needSyncUpstre
 		allocator = ipam.IPv4Allocator
 
 	default:
-		err = fmt.Errorf("unknown address \"%s\" family requested", family)
+		err = fmt.Errorf("unknown address family %q requested", family)
 		return
 	}
 
@@ -176,41 +176,38 @@ func (ipam *IPAM) allocateNextFamily(family Family, owner string, needSyncUpstre
 }
 
 // AllocateNextFamily allocates the next IP of the requested address family
-func (ipam *IPAM) AllocateNextFamily(family Family, owner string) (result *AllocationResult, err error) {
+func (ipam *IPAM) AllocateNextFamily(family Family, owner string, pool Pool) (*AllocationResult, error) {
 	ipam.allocatorMutex.Lock()
 	defer ipam.allocatorMutex.Unlock()
 
 	needSyncUpstream := true
-
-	return ipam.allocateNextFamily(family, owner, needSyncUpstream)
+	return ipam.allocateNextFamily(family, owner, pool, needSyncUpstream)
 }
 
 // AllocateNextFamilyWithoutSyncUpstream allocates the next IP of the requested address family
 // without syncing upstream
-func (ipam *IPAM) AllocateNextFamilyWithoutSyncUpstream(family Family, owner string) (result *AllocationResult, err error) {
+func (ipam *IPAM) AllocateNextFamilyWithoutSyncUpstream(family Family, owner string, pool Pool) (*AllocationResult, error) {
 	ipam.allocatorMutex.Lock()
 	defer ipam.allocatorMutex.Unlock()
 
 	needSyncUpstream := false
-
-	return ipam.allocateNextFamily(family, owner, needSyncUpstream)
+	return ipam.allocateNextFamily(family, owner, pool, needSyncUpstream)
 }
 
 // AllocateNext allocates the next available IPv4 and IPv6 address out of the
 // configured address pool. If family is set to "ipv4" or "ipv6", then
 // allocation is limited to the specified address family. If the pool has been
 // drained of addresses, an error will be returned.
-func (ipam *IPAM) AllocateNext(family, owner string) (ipv4Result, ipv6Result *AllocationResult, err error) {
+func (ipam *IPAM) AllocateNext(family, owner string, pool Pool) (ipv4Result, ipv6Result *AllocationResult, err error) {
 	if (family == "ipv6" || family == "") && ipam.IPv6Allocator != nil {
-		ipv6Result, err = ipam.AllocateNextFamily(IPv6, owner)
+		ipv6Result, err = ipam.AllocateNextFamily(IPv6, owner, pool)
 		if err != nil {
 			return
 		}
-
 	}
 
 	if (family == "ipv4" || family == "") && ipam.IPv4Allocator != nil {
-		ipv4Result, err = ipam.AllocateNextFamily(IPv4, owner)
+		ipv4Result, err = ipam.AllocateNextFamily(IPv4, owner, pool)
 		if err != nil {
 			if ipv6Result != nil {
 				ipam.ReleaseIP(ipv6Result.IP)
@@ -225,8 +222,8 @@ func (ipam *IPAM) AllocateNext(family, owner string) (ipv4Result, ipv6Result *Al
 // AllocateNextWithExpiration is identical to AllocateNext but registers an
 // expiration timer as well. This is identical to using AllocateNext() in
 // combination with StartExpirationTimer()
-func (ipam *IPAM) AllocateNextWithExpiration(family, owner string, timeout time.Duration) (ipv4Result, ipv6Result *AllocationResult, err error) {
-	ipv4Result, ipv6Result, err = ipam.AllocateNext(family, owner)
+func (ipam *IPAM) AllocateNextWithExpiration(family, owner string, pool Pool, timeout time.Duration) (ipv4Result, ipv6Result *AllocationResult, err error) {
+	ipv4Result, ipv6Result, err = ipam.AllocateNext(family, owner, pool)
 	if err != nil {
 		return nil, nil, err
 	}
